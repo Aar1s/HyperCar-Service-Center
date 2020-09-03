@@ -5,7 +5,7 @@
     <title>Next ticket</title>
 </head>
     <body>
-        {% if ticket_number == 0 or ticket_number == 1 %}
+        {% if busy is False %}
             <div>Waiting for the next client</div>
         {% else %}
             <div>Next ticket #{{ ticket_number }}</div>

@@ -4,6 +4,9 @@ from django.shortcuts import render, redirect
 from django.views.generic.base import TemplateView
 from collections import deque
 import datetime
+ticket_n = 0
+waiting_time = 0
+
 
 class WelcomeView(View):
     def get(self, request, *args, **kwargs):
@@ -21,13 +24,22 @@ class MenuView(View):
         return render(request, 'menu/menu.html')
 
 
-ticket_n = 0
-waiting_time = 0
 class TicketView(MenuView):
     line_of_cars = {'Oil': {'Quantity': 0, 'ticket_numbers': []},
                 'Tires': {'Quantity': 0, 'ticket_numbers': []},
                 'Diagnostics': {'Quantity': 0, 'ticket_numbers': []}}
     tickets = {}
+
+    def find_next_ticket(self):
+        if self.line_of_cars['Oil']['Quantity'] > 0:
+            next_ticket = self.line_of_cars['Oil']['ticket_numbers'][0]
+        elif self.line_of_cars['Tires']['Quantity'] > 0:
+            next_ticket = self.line_of_cars['Tires']['ticket_numbers'][0]
+        elif self.line_of_cars['Diagnostics']['Quantity'] > 0:
+            next_ticket = self.line_of_cars['Diagnostics']['ticket_numbers'][0]
+        else:
+            next_ticket = 0
+        return next_ticket
 
 
 class OilView(TicketView):
@@ -96,7 +108,6 @@ class DiagView(TicketView):
                 waiting_time = 2 * super().line_of_cars['Diagnostics']['Quantity'] +\
                                5 * super().line_of_cars['Diagnostics']['Quantity'] +\
                                30 * super().line_of_cars['Diagnostics']['Quantity']
-
         return render(request, 'get_ticket/ticket.html', context={
             'ticket_number': ticket_n,
             'waiting_time': waiting_time,
@@ -105,9 +116,10 @@ class DiagView(TicketView):
             'diagnostics': super().line_of_cars['Diagnostics']['Quantity']
         })
 
+# ВРЕМЯЯЯЯЯЯЯЯЯЯЯЯЯЯЯ
+
 
 class OperatorView(TicketView):
-    next_ticket = 0
     def get(self, request, *args, **kwargs):
         global ticket_n, waiting_time
         return render(request, 'processing/processing.html', context={
@@ -118,40 +130,27 @@ class OperatorView(TicketView):
         })
 
     def post(self, request, *args, **kwargs):
-        if super().line_of_cars['Tires']['Quantity'] > 0 and super().line_of_cars['Tires']['ticket_numbers'][0] == 1:
-            super().line_of_cars['Tires']['Quantity'] -= 1
-            self.next_ticket = super().line_of_cars['Tires']['ticket_numbers'].pop(0)
-        elif super().line_of_cars['Diagnostics']['Quantity'] > 0 and super().line_of_cars['Diagnostics']['ticket_numbers'][0] == 1:
-            super().line_of_cars['Diagnostics']['Quantity'] -= 1
-            self.next_ticket = super().line_of_cars['Diagnostics']['ticket_numbers'].pop(0)
-        elif super().line_of_cars['Oil']['Quantity'] > 0:
+        if super().line_of_cars['Oil']['Quantity'] > 0:
             super().line_of_cars['Oil']['Quantity'] -= 1
-            self.next_ticket = super().line_of_cars['Oil']['ticket_numbers'].pop(0)
+            super().line_of_cars['Oil']['ticket_numbers'].pop(0)
         elif super().line_of_cars['Tires']['Quantity'] > 0:
             super().line_of_cars['Tires']['Quantity'] -= 1
-            self.next_ticket = super().line_of_cars['Tires']['ticket_numbers'].pop(0)
+            super().line_of_cars['Tires']['ticket_numbers'].pop(0)
         elif super().line_of_cars['Diagnostics']['Quantity'] > 0:
             super().line_of_cars['Diagnostics']['Quantity'] -= 1
-            self.next_ticket = super().line_of_cars['Diagnostics']['ticket_numbers'].pop(0)
-        else:
-            self.next_ticket = 0
+            super().line_of_cars['Diagnostics']['ticket_numbers'].pop(0)
         return redirect('/next/')
 
+
 class NextView(TicketView):
-    next_ticket = 0
+    global ticket_n
+
     def get(self, request, *args, **kwargs):
-        if super().line_of_cars['Tires']['Quantity'] > 0 and super().line_of_cars['Tires']['ticket_numbers'][0] == 1:
-            self.next_ticket = super().line_of_cars['Tires']['ticket_numbers'][0]
-        elif super().line_of_cars['Diagnostics']['Quantity'] > 0 and super().line_of_cars['Diagnostics']['ticket_numbers'][0] == 1:
-            self.next_ticket = super().line_of_cars['Diagnostics']['ticket_numbers'][0]
-        elif super().line_of_cars['Oil']['Quantity'] > 0:
-            self.next_ticket = super().line_of_cars['Oil']['ticket_numbers'][0]
-        elif super().line_of_cars['Tires']['Quantity'] > 0:
-            self.next_ticket = super().line_of_cars['Tires']['ticket_numbers'][0]
-        elif super().line_of_cars['Diagnostics']['Quantity'] > 0:
-            self.next_ticket = super().line_of_cars['Diagnostics']['ticket_numbers'][0]
+        if ticket_n > 2:
+            busy = True
         else:
-            self.next_ticket = 0
+            busy = False
         return render(request, 'Next/next.html', context={
-            'ticket_number': self.next_ticket,
+            'ticket_number': self.find_next_ticket,
+            'busy': busy
         })
