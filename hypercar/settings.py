@@ -53,7 +53,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'hypercar.urls'
-ticket_n = 0
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
